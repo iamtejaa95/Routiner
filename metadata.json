@@ -1,0 +1,6 @@
+{
+  "name": "routiner",
+  "description": "A daily routine and note tracker featuring an AI habit analyzer, custom reminder tones, smart snooze, app limits, and a premium monochrome liquid glass design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
