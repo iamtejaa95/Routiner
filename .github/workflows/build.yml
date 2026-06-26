@@ -1,5 +1,4 @@
 name: Build APK
-onname: Build APK
 on: [push, workflow_dispatch]
 jobs:
   build:
@@ -28,4 +27,3 @@ jobs:
         with:
           name: my-app-apk
           path: "**/build/outputs/apk/debug/*.apk"
-          
