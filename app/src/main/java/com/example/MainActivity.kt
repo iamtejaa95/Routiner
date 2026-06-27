@@ -2,6 +2,9 @@ package com.example
 
 import android.os.Build
 import android.os.Bundle
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -17,9 +20,6 @@ import com.example.ui.AuraViewModel
 import com.example.ui.AuraViewModelFactory
 import com.example.ui.MainScreen
 import com.example.ui.theme.MyApplicationTheme
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 
     fun isNetworkAvailable(): Boolean {
         val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -29,7 +29,7 @@ import android.net.NetworkCapabilities
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
     }
-
+    
 if (isNetworkAvailable()) {
     // 🌐 Online! Hide the offline screen and trigger your AI features
     showMainAppLayout() 
