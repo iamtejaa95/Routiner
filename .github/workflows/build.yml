@@ -13,7 +13,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           
-      # This generates the security key in the root AND copies it to the app folder to cover both bases
       - name: Generate Missing Debug Keystore
         run: |
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
@@ -28,10 +27,15 @@ jobs:
         
       - name: Build with Gradle
         run: gradle assembleDebug --no-daemon
+
+      # This new step automatically changes the file name from app-debug.apk to Routiner.apk
+      - name: Rename Output File
+        run: |
+          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Routiner.apk
         
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: my-app-apk
-          path: "**/build/outputs/apk/debug/*.apk"
+          name: Routiner-App-File
+          path: "**/build/outputs/apk/debug/Routiner.apk"
           
