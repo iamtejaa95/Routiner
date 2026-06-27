@@ -18,6 +18,29 @@ import com.example.ui.AuraViewModelFactory
 import com.example.ui.MainScreen
 import com.example.ui.theme.MyApplicationTheme
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+
+// Add this function inside your MainActivity class
+del_fun isNetworkAvailable(): Boolean {
+    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    val activeNetwork = connectivityManager.activeNetwork ?: return false
+    val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+    
+    return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+           capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+}
+
+if (isNetworkAvailable()) {
+    // 🌐 Online! Hide the offline screen and trigger your AI features
+    showMainAppLayout() 
+    runAiRoutineGenerator()
+} else {
+    // 📡 Truly Offline. Show the offline backup layout safely
+    showOfflineScreen()
+}
+
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
