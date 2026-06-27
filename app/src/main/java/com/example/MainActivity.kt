@@ -17,20 +17,18 @@ import com.example.ui.AuraViewModel
 import com.example.ui.AuraViewModelFactory
 import com.example.ui.MainScreen
 import com.example.ui.theme.MyApplicationTheme
-
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 
-// Add this function inside your MainActivity class
-fun isNetworkAvailable(): Boolean {
-    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    val activeNetwork = connectivityManager.activeNetwork ?: return false
-    val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-    
-    return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-           capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-}
+    fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+        
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+               capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+    }
 
 if (isNetworkAvailable()) {
     // 🌐 Online! Hide the offline screen and trigger your AI features
