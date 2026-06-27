@@ -10,6 +10,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -50,6 +56,8 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material.icons.rounded.Star
@@ -61,6 +69,13 @@ import androidx.compose.material.icons.rounded.CompassCalibration
 import androidx.compose.material.icons.rounded.Whatshot
 import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.Key
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
@@ -92,6 +107,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import android.os.Build
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -132,6 +151,8 @@ fun MainScreen(
     val chatMessages by viewModel.chatMessages.collectAsState()
     val isAuraLoading by viewModel.isAuraLoading.collectAsState()
     val historyLogs by viewModel.historyLogs.collectAsState()
+    val customApiKey by viewModel.customApiKey.collectAsState()
+    val isSuitableOnline by viewModel.isSuitableOnline.collectAsState()
 
     // Focus state
     val isFocusModeActive by viewModel.isFocusModeActive.collectAsState()
@@ -234,6 +255,8 @@ fun DashboardTab(
     val workApps by viewModel.workApps.collectAsState()
     val entertainmentApps by viewModel.entertainmentApps.collectAsState()
     val notes by viewModel.notes.collectAsState()
+    val customApiKey by viewModel.customApiKey.collectAsState()
+    val isSuitableOnline by viewModel.isSuitableOnline.collectAsState()
 
     var showReminderCreator by remember { mutableStateOf(false) }
 
@@ -277,9 +300,9 @@ fun DashboardTab(
             StreakAndAnalyticsCard(viewModel, historyLogs, routines)
         }
 
-        // Personalized Wisdom Reflection Prompt
+        // Personalized Wisdom Reflection Guide
         item {
-            DailyReflectionPromptCard(viewModel, routines, notes)
+            DailyReflectionSuitableCard(viewModel, routines, notes)
         }
 
         // Well-Being and Live Screen Time Monitor Card
@@ -430,150 +453,137 @@ fun DashboardTab(
             }
         }
 
-        // App Categorizer (Work vs. Entertainment)
+        // Aura Settings & API Deployment Cockpit (Offline-first companion configuration)
         item {
             GlassCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Rounded.Category,
-                        contentDescription = null,
-                        tint = ElegantBronze,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "APP SAFETY CATEGORIZER",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                val context = LocalContext.current
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = null,
+                            tint = ElegantBronze,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "AURA SETTINGS & API DEPLOYMENT",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
+
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Select apps to categorize. Entertainment apps are strictly locked during work sessions.",
+                    text = "Configure system overlays and grant needed permissions to enable the full lock screen and offline sound controls.",
                     fontSize = 12.sp,
                     color = Color.LightGray
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Work Apps Flow
+                // Connection indicator status
                 Text(
-                    text = "💼 Approved Work Apps",
-                    fontSize = 12.sp,
+                    text = "SYSTEM ARCHITECTURE STATUS",
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = ElegantBronze
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0x0AFFFFFF))
+                        .border(width = 1.dp, color = Color(0x11FFFFFF), shape = RoundedCornerShape(12.dp))
+                        .padding(12.dp)
                 ) {
-                    workApps.forEach { app ->
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0x1A8A6E56), RoundedCornerShape(8.dp))
-                                .border(1.dp, Color(0x338A6E56), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(text = app, fontSize = 11.sp, color = CafeCream)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Rounded.Close,
-                                    contentDescription = "Remove",
-                                    tint = Color.Gray,
-                                    modifier = Modifier
-                                        .size(12.dp)
-                                        .clickable { viewModel.removeAppFromCategory(app, isWork = true) }
-                                )
-                            }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Psychology,
+                            contentDescription = null,
+                            tint = CafeCream,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "AURA SECURE SYSTEM INTENT",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Aura secure hybrid-cognitive services are fully synchronized. Offline reflection engines and streak diagnostics remain continuously active.",
+                                fontSize = 11.sp,
+                                color = CafeCream,
+                                lineHeight = 14.sp
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Entertainment Apps Flow
+                // System Control Permissions Section
                 Text(
-                    text = "🛑 Blocked Entertainment Apps (Strict Work Lock)",
-                    fontSize = 12.sp,
+                    text = "SYSTEM SECURITY & CONTROL PERMISSIONS",
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFC59B7F)
+                    color = ElegantBronze
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    entertainmentApps.forEach { app ->
-                        Box(
-                            modifier = Modifier
-                                .background(Color(0x1F2C1D11), RoundedCornerShape(8.dp))
-                                .border(1.dp, Color(0x33C59B7F), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(text = app, fontSize = 11.sp, color = CafeCream)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Rounded.Close,
-                                    contentDescription = "Remove",
-                                    tint = Color.Gray,
-                                    modifier = Modifier
-                                        .size(12.dp)
-                                        .clickable { viewModel.removeAppFromCategory(app, isWork = false) }
-                                )
-                            }
-                        }
-                    }
-                }
+                Text(
+                    text = "Unlock high-productivity system triggers. This app runs fully locally and never collects or transmits any private data.",
+                    fontSize = 10.sp,
+                    color = Color.LightGray
+                )
+                Spacer(modifier = Modifier.height(10.dp))
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Quick Add field for classification
-                var appInput by remember { mutableStateOf("") }
-                var selectedTargetWork by remember { mutableStateOf(false) }
-
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    GlassTextField(
-                        value = appInput,
-                        onValueChange = { appInput = it },
-                        placeholder = "App Name (e.g., Snapchat)",
-                        modifier = Modifier.weight(1.5f),
-                        testTag = "app_category_input"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0x1AFFFFFF))
-                            .clickable { selectedTargetWork = !selectedTargetWork }
-                            .padding(vertical = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (selectedTargetWork) "Work" else "Entertainment",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ElegantBronze
-                        )
-                    }
-
-                    GlassIconButton(
+                    // System Overlay Button
+                    GlassButton(
                         onClick = {
-                            if (appInput.isNotBlank()) {
-                                viewModel.addAppToCategory(appInput, isWork = selectedTargetWork)
-                                appInput = ""
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                val intent = Intent(
+                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:${context.packageName}")
+                                )
+                                context.startActivity(intent)
                             }
                         },
-                        icon = Icons.Rounded.Add,
-                        contentDescription = "Add App"
+                        text = "Enable Lock Screen Overlay",
+                        icon = Icons.Rounded.Lock,
+                        modifier = Modifier.fillMaxWidth(),
+                        testTag = "overlay_permission_btn"
+                    )
+
+                    // Alarm scheduler button
+                    GlassButton(
+                        onClick = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                val intent = Intent(
+                                    Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                                    Uri.parse("package:${context.packageName}")
+                                )
+                                context.startActivity(intent)
+                            }
+                        },
+                        text = "Enable Offline Alarm Timers",
+                        icon = Icons.Rounded.Notifications,
+                        modifier = Modifier.fillMaxWidth(),
+                        testTag = "alarm_permission_btn"
                     )
                 }
             }
@@ -709,8 +719,9 @@ fun DashboardTab(
 fun ReminderCreatorPanel(viewModel: AuraViewModel, onComplete: () -> Unit) {
     var title by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf("") }
-    var hour by remember { mutableStateOf(8) }
-    var min by remember { mutableStateOf(0) }
+    var hourInput by remember { mutableStateOf("08") }
+    var minInput by remember { mutableStateOf("30") }
+    var isAm by remember { mutableStateOf(true) }
     var urgency by remember { mutableStateOf("Medium") }
     var selectedTone by remember { mutableStateOf("Zen Chime") }
 
@@ -742,57 +753,87 @@ fun ReminderCreatorPanel(viewModel: AuraViewModel, onComplete: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = "Time (24h format)", fontSize = 12.sp, color = CafeCream)
+            Text(text = "Time (12h format)", fontSize = 12.sp, color = CafeCream)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Hour Selector
-                var showHourDropdown by remember { mutableStateOf(false) }
-                Box {
-                    Row(
-                        modifier = Modifier
-                            .background(Color(0x1AFFFFFF), RoundedCornerShape(8.dp))
-                            .clickable { showHourDropdown = true }
-                            .padding(8.dp)
-                    ) {
-                        Text(text = String.format("%02d", hour), color = Color.White, fontSize = 14.sp)
-                        Icon(imageVector = Icons.Rounded.KeyboardArrowDown, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
-                    }
-                    DropdownMenu(
-                        expanded = showHourDropdown,
-                        onDismissRequest = { showHourDropdown = false }
-                    ) {
-                        (0..23).forEach { h ->
-                            DropdownMenuItem(
-                                text = { Text(String.format("%02d", h)) },
-                                onClick = { hour = h; showHourDropdown = false }
-                            )
+                // Hour Input Box
+                BasicTextField(
+                    value = hourInput,
+                    onValueChange = { input ->
+                        val filtered = input.filter { it.isDigit() }
+                        if (filtered.length <= 2) {
+                            hourInput = filtered
+                        }
+                    },
+                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    cursorBrush = SolidColor(ElegantBronze),
+                    modifier = Modifier
+                        .width(42.dp)
+                        .background(Color(0x1AFFFFFF), RoundedCornerShape(8.dp))
+                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                    decorationBox = { innerTextField ->
+                        Box(contentAlignment = Alignment.Center) {
+                            if (hourInput.isEmpty()) {
+                                Text("12", color = Color.Gray, fontSize = 14.sp)
+                            }
+                            innerTextField()
                         }
                     }
-                }
+                )
 
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(text = ":", color = Color.White)
+                Text(text = ":", color = Color.White, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // Minute Selector
-                var showMinDropdown by remember { mutableStateOf(false) }
-                Box {
-                    Row(
-                        modifier = Modifier
-                            .background(Color(0x1AFFFFFF), RoundedCornerShape(8.dp))
-                            .clickable { showMinDropdown = true }
-                            .padding(8.dp)
-                    ) {
-                        Text(text = String.format("%02d", min), color = Color.White, fontSize = 14.sp)
-                        Icon(imageVector = Icons.Rounded.KeyboardArrowDown, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                // Minute Input Box
+                BasicTextField(
+                    value = minInput,
+                    onValueChange = { input ->
+                        val filtered = input.filter { it.isDigit() }
+                        if (filtered.length <= 2) {
+                            minInput = filtered
+                        }
+                    },
+                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    cursorBrush = SolidColor(ElegantBronze),
+                    modifier = Modifier
+                        .width(42.dp)
+                        .background(Color(0x1AFFFFFF), RoundedCornerShape(8.dp))
+                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                    decorationBox = { innerTextField ->
+                        Box(contentAlignment = Alignment.Center) {
+                            if (minInput.isEmpty()) {
+                                Text("00", color = Color.Gray, fontSize = 14.sp)
+                            }
+                            innerTextField()
+                        }
                     }
-                    DropdownMenu(
-                        expanded = showMinDropdown,
-                        onDismissRequest = { showMinDropdown = false }
-                    ) {
-                        listOf(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55).forEach { m ->
-                            DropdownMenuItem(
-                                text = { Text(String.format("%02d", m)) },
-                                onClick = { min = m; showMinDropdown = false }
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // AM/PM Selection Buttons
+                Row(
+                    modifier = Modifier
+                        .background(Color(0x1AFFFFFF), RoundedCornerShape(8.dp))
+                        .padding(2.dp)
+                ) {
+                    listOf("AM", "PM").forEach { period ->
+                        val isSelected = if (period == "AM") isAm else !isAm
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (isSelected) ElegantBronze else Color.Transparent)
+                                .clickable { isAm = (period == "AM") }
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = period,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) Color.White else CafeCream
                             )
                         }
                     }
@@ -860,8 +901,16 @@ fun ReminderCreatorPanel(viewModel: AuraViewModel, onComplete: () -> Unit) {
         Spacer(modifier = Modifier.height(4.dp))
         GlassButton(
             onClick = {
+                val h12 = hourInput.toIntOrNull()?.coerceIn(1, 12) ?: 8
+                val minVal = minInput.toIntOrNull()?.coerceIn(0, 59) ?: 0
+                val hour24 = when {
+                    isAm && h12 == 12 -> 0
+                    isAm -> h12
+                    !isAm && h12 == 12 -> 12
+                    else -> h12 + 12
+                }
                 if (title.isNotBlank()) {
-                    viewModel.addReminder(title, msg, hour, min, urgency, selectedTone)
+                    viewModel.addReminder(title, msg, hour24, minVal, urgency, selectedTone)
                     onComplete()
                 }
             },
@@ -957,7 +1006,11 @@ fun ReminderItemRow(reminder: Reminder, viewModel: AuraViewModel) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(imageVector = Icons.Rounded.AccessTime, contentDescription = null, tint = CafeCream, modifier = Modifier.size(11.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "$formattedTime   🔔 ${reminder.tone}", fontSize = 11.sp, color = CafeCream)
+                    Text(text = formattedTime, fontSize = 11.sp, color = CafeCream)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Icon(imageVector = Icons.Rounded.NotificationsActive, contentDescription = null, tint = CafeCream, modifier = Modifier.size(11.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = reminder.tone, fontSize = 11.sp, color = CafeCream)
                 }
 
                 // Learn Snooze Count & Suggest Adaptive Duration
@@ -1054,7 +1107,9 @@ fun HistoryLogItemRow(log: HistoryLog, viewModel: AuraViewModel) {
 @Composable
 fun RoutinesTab(viewModel: AuraViewModel, routines: List<Routine>) {
     var titleInput by remember { mutableStateOf("") }
-    var timeInput by remember { mutableStateOf("") }
+    var hourInput by remember { mutableStateOf("07") }
+    var minInput by remember { mutableStateOf("30") }
+    var isAm by remember { mutableStateOf(true) }
     var selectedCategory by remember { mutableStateOf("General") }
 
     LazyColumn(
@@ -1099,37 +1154,168 @@ fun RoutinesTab(viewModel: AuraViewModel, routines: List<Routine>) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    GlassTextField(
-                        value = timeInput,
-                        onValueChange = { timeInput = it },
-                        placeholder = "Scheduled Time (e.g. 07:30)",
-                        modifier = Modifier.weight(1f),
-                        testTag = "routine_time_input"
-                    )
-
-                    // Simple quick category selector
-                    listOf("Morning", "Work", "Night").forEach { cat ->
-                        Box(
+                    // Time Selector Container (12h format AM/PM)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .background(Color(0x11FFFFFF), RoundedCornerShape(12.dp))
+                            .border(1.dp, Color(0x1F8A6E56), RoundedCornerShape(12.dp))
+                            .padding(8.dp)
+                    ) {
+                        // Hour Input Box
+                        BasicTextField(
+                            value = hourInput,
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() }
+                                if (filtered.length <= 2) {
+                                    hourInput = filtered
+                                }
+                            },
+                            textStyle = TextStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            cursorBrush = SolidColor(ElegantBronze),
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (selectedCategory == cat) ElegantBronze else Color(0x10FFFFFF))
-                                .clickable { selectedCategory = cat }
-                                .padding(horizontal = 10.dp, vertical = 14.dp),
-                            contentAlignment = Alignment.Center
+                                .width(32.dp)
+                                .background(Color(0x1AFFFFFF), RoundedCornerShape(6.dp))
+                                .padding(vertical = 6.dp),
+                            decorationBox = { innerTextField ->
+                                Box(contentAlignment = Alignment.Center) {
+                                    if (hourInput.isEmpty()) {
+                                        Text("12", color = Color.Gray, fontSize = 14.sp)
+                                    }
+                                    innerTextField()
+                                }
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = ":", color = Color.White, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        // Minute Input Box
+                        BasicTextField(
+                            value = minInput,
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() }
+                                if (filtered.length <= 2) {
+                                    minInput = filtered
+                                }
+                            },
+                            textStyle = TextStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            cursorBrush = SolidColor(ElegantBronze),
+                            modifier = Modifier
+                                .width(32.dp)
+                                .background(Color(0x1AFFFFFF), RoundedCornerShape(6.dp))
+                                .padding(vertical = 6.dp),
+                            decorationBox = { innerTextField ->
+                                Box(contentAlignment = Alignment.Center) {
+                                    if (minInput.isEmpty()) {
+                                        Text("00", color = Color.Gray, fontSize = 14.sp)
+                                    }
+                                    innerTextField()
+                                }
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        // AM/PM Selection Buttons
+                        Row(
+                            modifier = Modifier
+                                .background(Color(0x1AFFFFFF), RoundedCornerShape(8.dp))
+                                .padding(2.dp)
                         ) {
-                            Text(text = cat, fontSize = 11.sp, color = if (selectedCategory == cat) Color.White else CafeCream)
+                            listOf("AM", "PM").forEach { period ->
+                                val isSelected = if (period == "AM") isAm else !isAm
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(if (isSelected) ElegantBronze else Color.Transparent)
+                                        .clickable { isAm = (period == "AM") }
+                                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = period,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) Color.White else CafeCream
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Responsive space-saving category selector dropdown
+                    var showCatDropdown by remember { mutableStateOf(false) }
+                    val categories = listOf("Morning", "Work", "Night", "Health", "Social", "General")
+                    Box(
+                        modifier = Modifier
+                            .weight(0.8f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0x11FFFFFF))
+                            .border(1.dp, Color(0x1F8A6E56), RoundedCornerShape(12.dp))
+                            .clickable { showCatDropdown = true }
+                            .padding(vertical = 12.dp, horizontal = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = selectedCategory,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Icon(
+                                imageVector = Icons.Rounded.KeyboardArrowDown,
+                                contentDescription = "Select Category",
+                                tint = ElegantBronze,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showCatDropdown,
+                            onDismissRequest = { showCatDropdown = false }
+                        ) {
+                            categories.forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(cat) },
+                                    onClick = {
+                                        selectedCategory = cat
+                                        showCatDropdown = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 GlassButton(
                     onClick = {
-                        if (titleInput.isNotBlank() && timeInput.isNotBlank()) {
-                            viewModel.addRoutine(titleInput, timeInput, selectedCategory)
+                        if (titleInput.isNotBlank()) {
+                            val h = hourInput.trim().toIntOrNull() ?: 7
+                            val m = minInput.trim().toIntOrNull() ?: 0
+                            val h24 = if (isAm) {
+                                if (h == 12) 0 else h
+                            } else {
+                                if (h == 12) 12 else h + 12
+                            }
+                            val formattedTime = String.format(Locale.getDefault(), "%02d:%02d", h24, m)
+                            viewModel.addRoutine(titleInput, formattedTime, selectedCategory)
                             titleInput = ""
-                            timeInput = ""
+                            hourInput = "07"
+                            minInput = "30"
+                            isAm = true
                         }
                     },
                     text = "Insert Habit Routine",
@@ -1201,7 +1387,14 @@ fun RoutinesTab(viewModel: AuraViewModel, routines: List<Routine>) {
                                         Text(text = routine.category, fontSize = 9.sp, color = ElegantBronze, fontWeight = FontWeight.Bold)
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = "⏰ ${routine.timeStr}", fontSize = 12.sp, color = Color.LightGray)
+                                    Icon(
+                                        imageVector = Icons.Rounded.Schedule,
+                                        contentDescription = null,
+                                        tint = Color.LightGray,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(text = formatTimeTo12h(routine.timeStr), fontSize = 12.sp, color = Color.LightGray)
                                 }
                             }
                         }
@@ -1217,6 +1410,24 @@ fun RoutinesTab(viewModel: AuraViewModel, routines: List<Routine>) {
         item {
             Spacer(modifier = Modifier.height(100.dp))
         }
+    }
+}
+
+fun formatTimeTo12h(timeStr: String): String {
+    return try {
+        val parts = timeStr.split(":")
+        val hour24 = parts[0].trim().toInt()
+        val minute = parts[1].trim().toInt()
+        val isAm = hour24 < 12
+        val hour12 = when (hour24) {
+            0 -> 12
+            in 1..12 -> hour24
+            else -> hour24 - 12
+        }
+        val period = if (isAm) "AM" else "PM"
+        String.format(Locale.getDefault(), "%d:%02d %s", hour12, minute, period)
+    } catch (e: Exception) {
+        timeStr
     }
 }
 
@@ -1377,9 +1588,11 @@ fun ChatTab(
 ) {
     val aiAnalysisResult by viewModel.aiAnalysisResult.collectAsState()
     val isAnalyzingPatterns by viewModel.isAnalyzingPatterns.collectAsState()
+    val customApiKey by viewModel.customApiKey.collectAsState()
 
     var chatInput by remember { mutableStateOf("") }
     val lazyListState = rememberLazyListState()
+    var showApiKeyDialog by remember { mutableStateOf(false) }
 
     // Keep scrolling to newest chat message automatically
     LaunchedEffect(messages.size) {
@@ -1416,15 +1629,32 @@ fun ChatTab(
                 )
             }
 
-            Text(
-                text = "Clear Chat",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray,
-                modifier = Modifier
-                    .clickable { viewModel.clearChatHistory() }
-                    .padding(8.dp)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Clear Chat",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray,
+                    modifier = Modifier
+                        .clickable { viewModel.clearChatHistory() }
+                        .padding(8.dp)
+                )
+
+                IconButton(
+                    onClick = { showApiKeyDialog = true },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Settings,
+                        contentDescription = "Gemini Key Settings",
+                        tint = CafeCream,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -1591,6 +1821,75 @@ fun ChatTab(
             )
         }
     }
+
+    if (showApiKeyDialog) {
+        var apiKeyInput by remember { mutableStateOf(customApiKey) }
+        AlertDialog(
+            onDismissRequest = { showApiKeyDialog = false },
+            containerColor = Color(0xFF1E1613),
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Settings,
+                        contentDescription = null,
+                        tint = ElegantBronze,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Gemini API Configuration",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Register your personal Gemini API key to run pattern-recognition and offline routine intelligence directly on your device.",
+                        color = Color.LightGray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = apiKeyInput,
+                        onValueChange = { apiKeyInput = it },
+                        placeholder = { Text("Enter AI Studio API Key (AIzaSy...)", color = Color.Gray, fontSize = 12.sp) },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 2,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = ElegantBronze,
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f),
+                            focusedContainerColor = Color(0x1A000000),
+                            unfocusedContainerColor = Color(0x1A000000)
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.saveCustomApiKey(apiKeyInput.trim())
+                        showApiKeyDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ElegantBronze)
+                ) {
+                    Text("Save Key", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showApiKeyDialog = false }
+                ) {
+                    Text("Close", color = Color.LightGray)
+                }
+            }
+        )
+    }
 }
 
 // ==========================================
@@ -1603,6 +1902,11 @@ fun FocusOverlayLockScreen(
     focusType: String,
     onCancel: () -> Unit
 ) {
+    // Completely block hardware Back button presses to enforce lock screen
+    androidx.activity.compose.BackHandler(enabled = true) {
+        // Do nothing - blocks back navigation
+    }
+
     val minutes = focusTimeRemaining / 60
     val seconds = focusTimeRemaining % 60
     val progressFraction = if (focusTimeRemaining > 0) focusTimeRemaining.toFloat() else 1f
@@ -1711,6 +2015,13 @@ fun FocusOverlayLockScreen(
     }
 }
 
+data class MilestoneBadge(
+    val name: String,
+    val targetCount: Int,
+    val description: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+)
+
 @Composable
 fun ReflectionStudioPanel(
     viewModel: AuraViewModel,
@@ -1726,12 +2037,11 @@ fun ReflectionStudioPanel(
     var textInput by remember { mutableStateOf("") }
 
     GlassCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Icon(
                     imageVector = Icons.Rounded.SelfImprovement,
                     contentDescription = null,
@@ -1746,10 +2056,10 @@ fun ReflectionStudioPanel(
                     color = Color.White
                 )
             }
-            
-            // Sub-tabs
+            Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier
+                    .fillMaxWidth()
                     .background(Color(0x1AFFFFFF), RoundedCornerShape(12.dp))
                     .padding(2.dp)
             ) {
@@ -1757,10 +2067,12 @@ fun ReflectionStudioPanel(
                     val isSelected = activeReflectionTab == tab
                     Box(
                         modifier = Modifier
+                            .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
                             .background(if (isSelected) ElegantBronze else Color.Transparent)
                             .clickable { activeReflectionTab = tab }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = tab,
@@ -2254,12 +2566,21 @@ fun StreakAndAnalyticsCard(
                             letterSpacing = 0.5.sp
                         )
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = if (streak >= 5) "🔥 1.5x Focus Multiplier" else "⚡ Keep building!",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (streak >= 5) Color(0xFFFFB74D) else Color.White
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (streak >= 5) Icons.Rounded.Whatshot else Icons.Rounded.TrendingUp,
+                                contentDescription = null,
+                                tint = if (streak >= 5) Color(0xFFFFB74D) else Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (streak >= 5) "1.5x Focus Multiplier" else "Keep building!",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (streak >= 5) Color(0xFFFFB74D) else Color.White
+                            )
+                        }
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = "Consistency fuels mindfulness.",
@@ -2315,18 +2636,18 @@ fun StreakAndAnalyticsCard(
 }
 
 @Composable
-fun DailyReflectionPromptCard(
+fun DailyReflectionSuitableCard(
     viewModel: AuraViewModel,
     routines: List<Routine>,
     notes: List<DailyNote>
 ) {
-    val prompt by viewModel.dailyReflectionPrompt.collectAsState()
-    val isOnline by viewModel.isPromptOnline.collectAsState()
-    val isLoading by viewModel.isPromptLoading.collectAsState()
+    val prompt by viewModel.dailyReflectionSuitable.collectAsState()
+    val isOnline by viewModel.isSuitableOnline.collectAsState()
+    val isLoading by viewModel.isSuitableLoading.collectAsState()
 
     LaunchedEffect(key1 = routines.size, key2 = notes.size) {
         if (prompt == "What is one small routine you can prioritize today to make the day feel like a victory?") {
-            viewModel.generateDailyReflectionPrompt(routines, notes)
+            viewModel.generateDailyReflectionSuitable(routines, notes)
         }
     }
 
@@ -2345,7 +2666,7 @@ fun DailyReflectionPromptCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "AURA RECONSTRUCT PROMPT",
+                    text = "AURA RECONSTRUCT CUE",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -2356,12 +2677,12 @@ fun DailyReflectionPromptCard(
             Row(
                 modifier = Modifier
                     .background(
-                        if (isOnline) Color(0x1C4CAF50) else Color(0x1F9E9E9E),
+                        Color(0x0EFFFFFF),
                         RoundedCornerShape(10.dp)
                     )
                     .border(
                         width = 0.8.dp,
-                        color = if (isOnline) Color(0x524CAF50) else Color(0x3D9E9E9E),
+                        color = Color(0x1AFFFFFF),
                         shape = RoundedCornerShape(10.dp)
                     )
                     .padding(horizontal = 8.dp, vertical = 3.dp),
@@ -2371,16 +2692,16 @@ fun DailyReflectionPromptCard(
                     modifier = Modifier
                         .size(6.dp)
                         .background(
-                            if (isOnline) Color(0xFF4CAF50) else Color(0xFF9E9E9E),
+                            ElegantBronze,
                             CircleShape
                         )
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = if (isOnline) "AI Active" else "Offline Mode",
+                    text = "Aura Engine",
                     fontSize = 8.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isOnline) Color(0xFF81C784) else Color(0xFFE0E0E0)
+                    color = CafeCream
                 )
             }
         }
@@ -2475,7 +2796,7 @@ fun DailyReflectionPromptCard(
                             onClick = {
                                 if (reflectionText.isNotBlank()) {
                                     viewModel.addNote(
-                                        content = "[Reflection Prompt: $prompt]\n\nMy thoughts:\n${reflectionText.trim()}",
+                                        content = "[Reflection: $prompt]\n\nMy thoughts:\n${reflectionText.trim()}",
                                         tag = "Reflection"
                                     )
                                     reflectionText = ""
@@ -2503,7 +2824,7 @@ fun DailyReflectionPromptCard(
             )
 
             IconButton(
-                onClick = { viewModel.generateDailyReflectionPrompt(routines, notes) },
+                onClick = { viewModel.generateDailyReflectionSuitable(routines, notes) },
                 modifier = Modifier
                     .background(Color(0x12FFFFFF), RoundedCornerShape(12.dp))
                     .border(width = 1.dp, color = Color(0x1F8A6E56), shape = RoundedCornerShape(12.dp))
@@ -2511,7 +2832,7 @@ fun DailyReflectionPromptCard(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Refresh,
-                    contentDescription = "Refresh Prompt",
+                    contentDescription = "Refresh Cue",
                     tint = ElegantBronze,
                     modifier = Modifier.size(18.dp)
                 )
