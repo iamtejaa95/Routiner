@@ -13,10 +13,12 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           
-      # This brand new step creates the temporary security file your project is asking for
+      # This generates the security key in the root AND copies it to the app folder to cover both bases
       - name: Generate Missing Debug Keystore
         run: |
-          keytool -genkey -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          mkdir -p app
+          cp debug.keystore app/debug.keystore
           
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
