@@ -13,18 +13,17 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           
-      - name: Auto-accept Android SDK Licenses
+      # This brand new step creates the temporary security file your project is asking for
+      - name: Generate Missing Debug Keystore
         run: |
-          yes | sdkmanager --licenses || true
+          keytool -genkey -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           
-      # This configures Gradle 9.3.1 safely and bypasses the broken GitHub cache
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 9.3.1
           cache-disabled: true
         
-      # This runs the build command cleanly on its own line without errors
       - name: Build with Gradle
         run: gradle assembleDebug --no-daemon
         
